@@ -149,9 +149,9 @@ The only safe use of `ownPublicKey()` is identifying the recipient of an outgoin
 ZKLoan implements this with a single `userSecretKey` in private state and two domain-separated derivations: one for the admin role, one for per-user PIN-bound identity.
 
 ```compact
-export struct UserSecretKey { bytes: Bytes<32>; }
-export struct UserPublicKey { bytes: Bytes<32>; }
-export struct AdminPublicKey { bytes: Bytes<32>; }
+export new type UserSecretKey = Bytes<32>;
+export new type UserPublicKey = Bytes<32>;
+export new type AdminPublicKey = Bytes<32>;
 
 export ledger contractAdmin: AdminPublicKey;
 export ledger blacklist: Set<UserPublicKey>;
@@ -163,28 +163,23 @@ constructor() {
 
 export pure circuit deriveUserPublicKey(sk: UserSecretKey, pin: Uint<16>): UserPublicKey {
     const pinBytes = persistentHash<Uint<16>>(pin);
-    return UserPublicKey {
-        bytes: persistentHash<Vector<3, Bytes<32>>>([
-            pad(32, "zkloan:user:pk:v1"),
-            pinBytes,
-            sk.bytes
-        ])
-    };
+    return persistentHash<[Bytes<17>, Bytes<32>, UserSecretKey]>([
+        "zkloan:user:pk:v1",
+        pinBytes,
+        sk
+    ]) as UserPublicKey;
 }
 
 export pure circuit deriveAdminPublicKey(sk: UserSecretKey): AdminPublicKey {
-    return AdminPublicKey {
-        bytes: persistentHash<Vector<2, Bytes<32>>>([
-            pad(32, "zkloan:admin:pk:v1"),
-            sk.bytes
-        ])
-    };
+    return persistentHash<[Bytes<18>, UserSecretKey]>([
+        "zkloan:admin:pk:v1",
+        sk
+    ]) as AdminPublicKey;
 }
 
 export circuit blacklistUser(account: UserPublicKey): [] {
     assert(contractAdmin == deriveAdminPublicKey(getUserSecret()), "Only admin can blacklist users");
     blacklist.insert(disclose(account));
-    return [];
 }
 ```
 
@@ -241,8 +236,8 @@ ZKLoan solves this with a pattern that processes a fixed batch per transaction a
 ```compact
 export circuit changePin(oldPin: Uint<16>, newPin: Uint<16>): [] {
     // Identity derives from the witness secret + PIN, never from ownPublicKey()
-    const oldPk = disclose(deriveUserPublicKey(getUserSecret(), oldPin)).bytes;
-    const newPk = disclose(deriveUserPublicKey(getUserSecret(), newPin)).bytes;
+    const oldPk = disclose(deriveUserPublicKey(getUserSecret(), oldPin)) as Bytes<32>;
+    const newPk = disclose(deriveUserPublicKey(getUserSecret(), newPin)) as Bytes<32>;
 
     // Track migration progress in ledger state
     if (!onGoingPinMigration.member(oldPk)) {
@@ -358,7 +353,7 @@ export circuit respondToLoan(loanId: Uint<16>, secretPin: Uint<16>,
     const disclosed = disclose(requesterPubKey);
 
     // Ensure loan exists and is in Proposed status
-    const existingLoan = loans.lookup(disclosed.bytes).lookup(loanId);
+    const existingLoan = loans.lookup(disclosed as Bytes<32>).lookup(loanId);
     assert(existingLoan.status == LoanStatus.Proposed,
            "Loan is not in Proposed status");
 
@@ -369,7 +364,7 @@ export circuit respondToLoan(loanId: Uint<16>, secretPin: Uint<16>,
         : LoanApplication { authorizedAmount: 0,
                            status: LoanStatus.NotAccepted };
 
-    loans.lookup(disclosed.bytes).insert(loanId, disclose(updatedLoan));
+    loans.lookup(disclosed as Bytes<32>).insert(loanId, disclose(updatedLoan));
 }
 ```
 

@@ -119,16 +119,15 @@ export circuit requestLoan(amountRequested: Uint<16>, secretPin: Uint<16>): [] {
     const disclosed = disclose(requesterPubKey);
 
     assert(!blacklist.member(disclosed), "Requester is blacklisted");
-    assert(!onGoingPinMigration.member(disclosed.bytes),
+    assert(!onGoingPinMigration.member(disclosed as Bytes<32>),
            "PIN migration is in progress for this user");
 
     // Bound the signed attestation to this specific user identity
-    const userPubKeyHash = transientHash<Bytes<32>>(disclosed.bytes);
+    const userPubKeyHash = transientHash<Bytes<32>>(disclosed as Bytes<32>);
 
     const [topTierAmount, status] = evaluateApplicant(userPubKeyHash);
-    createLoan(disclosed.bytes, amountRequested,
+    createLoan(disclosed as Bytes<32>, amountRequested,
                disclose(topTierAmount), disclose(status));
-    return [];
 }
 ```
 
@@ -273,7 +272,7 @@ export const witnesses = {
     if (!privateState.userSecretKey || privateState.userSecretKey.length !== 32) {
       throw new Error("userSecretKey is missing or wrong length");
     }
-    return [privateState, { bytes: privateState.userSecretKey }];
+    return [privateState, privateState.userSecretKey];
   },
 };
 ```

@@ -319,8 +319,6 @@ The second goal is to move beyond simple key-value storage and demonstrate a mor
 
 The key public state in the contract is the loans ledger:
 
-Code snippet
-
 ```
 export ledger loans: Map<Bytes<32>, Map<Uint<16>, LoanApplication>>;
 ```
@@ -381,7 +379,7 @@ User Actions:
 
 #### The Admin Role
 
-The Admin role is responsible for the overall health and security of the DApp. Authorization uses the **witness-derived keypair pattern**: the deploying admin generates a 32-byte secret locally, the constructor computes its hash and stores that hash in the ledger field `contractAdmin`. Every admin circuit then asserts `contractAdmin == deriveAdminPublicKey(getAdminSecret())` inside the ZK proof, which forces the caller to know the preimage of the public value. The ledger value alone cannot be replayed, because possession of the secret is what satisfies the constraint.
+The Admin role is responsible for the overall health and security of the DApp. Authorization uses the **witness-derived keypair pattern**: the deploying admin generates a 32-byte secret locally, the constructor computes its hash and stores that hash in the ledger field `contractAdmin`. Every admin circuit then asserts `contractAdmin == deriveAdminPublicKey(getUserSecret())` inside the ZK proof, which forces the caller to know the preimage of the public value. The ledger value alone cannot be replayed, because possession of the secret is what satisfies the constraint.
 
 The role can be handed off via `rotateAdmin(newAdmin: AdminPublicKey)`. The next admin generates their own secret, computes their derived public key off-chain, and shares only that 32-byte value with the current admin. No private key is ever transmitted.
 
@@ -405,8 +403,6 @@ This section provides a detailed breakdown of each circuit within the ZKLoan Cre
 #### evaluateApplicant Circuit
 
 Logic:
-
-Code snippet
 
 ```
 circuit evaluateApplicant(): [Uint<16>, LoanStatus] {
@@ -440,8 +436,6 @@ Design Decisions: This circuit represents the core of the DApp's confidential bu
 #### createLoan Circuit
 
 Logic:
-
-Code snippet
 
 ```
 circuit createLoan(requester: Bytes<32>, amountRequested: Uint<16>, topTierAmount: Uint<16>, status: LoanStatus): \[] {
@@ -481,26 +475,23 @@ Design Decisions: This circuit is responsible for all interactions with the loan
 
 Logic:
 
-Code snippet
-
 ```
 export circuit respondToLoan(loanId: Uint<16>, secretPin: Uint<16>, accept: Boolean): [] {
     const requesterPubKey = deriveUserPublicKey(getUserSecret(), secretPin);
     const disclosed = disclose(requesterPubKey);
 
     assert(!blacklist.member(disclosed), "User is blacklisted");
-    assert(loans.member(disclosed.bytes), "No loans found for this user");
-    assert(loans.lookup(disclosed.bytes).member(disclose(loanId)), "Loan not found");
+    assert(loans.member(disclosed as Bytes<32>), "No loans found for this user");
+    assert(loans.lookup(disclosed as Bytes<32>).member(disclose(loanId)), "Loan not found");
 
-    const existingLoan = loans.lookup(disclosed.bytes).lookup(disclose(loanId));
+    const existingLoan = loans.lookup(disclosed as Bytes<32>).lookup(disclose(loanId));
     assert(existingLoan.status == LoanStatus.Proposed, "Loan is not in Proposed status");
 
     const updatedLoan = accept
         ? LoanApplication { authorizedAmount: existingLoan.authorizedAmount, status: LoanStatus.Approved }
         : LoanApplication { authorizedAmount: 0, status: LoanStatus.NotAccepted };
 
-    loans.lookup(disclosed.bytes).insert(disclose(loanId), disclose(updatedLoan));
-    return [];
+    loans.lookup(disclosed as Bytes<32>).insert(disclose(loanId), disclose(updatedLoan));
 }
 ```
 
@@ -519,8 +510,6 @@ Design Decisions: This circuit enables users to respond to loan proposals, compl
 
 Logic:
 
-Code snippet
-
 ```
 export circuit requestLoan(amountRequested:Uint<16>, secretPin: Uint<16>): [] {
     const requesterPubKey = deriveUserPublicKey(getUserSecret(), secretPin);
@@ -531,13 +520,11 @@ export circuit requestLoan(amountRequested:Uint<16>, secretPin: Uint<16>): [] {
     // ... PIN-migration guard ...
 
     // Bind the attestation to this caller's derived identity
-    const userPubKeyHash = transientHash<Bytes<32>>(disclosed.bytes);
+    const userPubKeyHash = transientHash<Bytes<32>>(disclosed as Bytes<32>);
     const [topTierAmount, status] = evaluateApplicant(userPubKeyHash);
     const disclosedTopTierAmount = disclose(topTierAmount);
     const disclosedStatus = disclose(status);
-    createLoan(disclosed.bytes, amountRequested, disclosedTopTierAmount, disclosedStatus);
-
-    return [];
+    createLoan(disclosed as Bytes<32>, amountRequested, disclosedTopTierAmount, disclosedStatus);
 }
 ```
 
@@ -554,8 +541,6 @@ Design Decisions: This circuit acts as the main entry point and orchestrator for
 
 Logic:
 
-Code snippet
-
 ```
 export circuit changePin(oldPin: Uint<16>, newPin: Uint<16>): [] {
     const oldPk = deriveUserPublicKey(getUserSecret(), oldPin);
@@ -563,7 +548,7 @@ export circuit changePin(oldPin: Uint<16>, newPin: Uint<16>): [] {
 
     // ... safety checks and initialization ...
 
-    const lastMigratedLoan = onGoingPinMigration.lookup(disclose(oldPk.bytes));
+    const lastMigratedLoan = onGoingPinMigration.lookup(disclose(oldPk) as Bytes<32>);
     // Vector of fixed size 5 is created
 
     const loansIds: Vector<5, Uint<16>> = [
