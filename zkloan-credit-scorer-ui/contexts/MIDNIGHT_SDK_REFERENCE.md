@@ -720,15 +720,15 @@ export circuit requestLoan(amountRequested: Uint<16>, secretPin: Uint<16>): [] {
 
     // Safety checks
     assert(!blacklist.member(disclosed), "Requester is blacklisted");
-    assert(!onGoingPinMigration.member(disclosed.bytes), "PIN migration in progress");
+    assert(!onGoingPinMigration.member(disclosed as Bytes<32>), "PIN migration in progress");
 
     // Private evaluation, bound to this caller's derived identity
-    const userPubKeyHash = transientHash<Bytes<32>>(disclosed.bytes);
+    const userPubKeyHash = transientHash<Bytes<32>>(disclosed as Bytes<32>);
     const [topTierAmount, status] = evaluateApplicant(userPubKeyHash);
 
     // Selective disclosure
     createLoan(
-        disclosed.bytes,
+        disclosed as Bytes<32>,
         amountRequested,
         disclose(topTierAmount),
         disclose(status)

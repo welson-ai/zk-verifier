@@ -37,9 +37,9 @@ export struct MyData { field1: Uint<32>; field2: Bytes<32>; }
 // Caller identity: single witness-supplied user secret. NEVER use
 // `ownPublicKey()` to identify the caller. See section 13 below for the rule
 // and the bypass it closes.
-export struct UserSecretKey { bytes: Bytes<32>; }
-export struct UserPublicKey { bytes: Bytes<32>; }
-export struct AdminPublicKey { bytes: Bytes<32>; }
+export new type UserSecretKey = Bytes<32>;
+export new type UserPublicKey = Bytes<32>;
+export new type AdminPublicKey = Bytes<32>;
 
 // Ledger declarations (public state)
 export ledger counter: Counter;
@@ -428,13 +428,11 @@ The per-user public key is derived from the witness `userSecretKey` and a PIN â€
 ```compact
 export pure circuit deriveUserPublicKey(sk: UserSecretKey, pin: Uint<16>): UserPublicKey {
     const pinBytes = persistentHash<Uint<16>>(pin);
-    return UserPublicKey {
-        bytes: persistentHash<Vector<3, Bytes<32>>>([
-            pad(32, "zkloan:user:pk:v1"),
-            pinBytes,
-            sk.bytes
-        ])
-    };
+    return persistentHash<[Bytes<17>, Bytes<32>, UserSecretKey]>([
+        "zkloan:user:pk:v1",
+        pinBytes,
+        sk
+    ]) as UserPublicKey;
 }
 ```
 
@@ -481,9 +479,9 @@ A single 32-byte `userSecretKey` lives in the caller's private state. The contra
 pragma language_version >= 0.22 && <= 0.23;
 import CompactStandardLibrary;
 
-export struct UserSecretKey { bytes: Bytes<32>; }
-export struct UserPublicKey { bytes: Bytes<32>; }
-export struct AdminPublicKey { bytes: Bytes<32>; }
+export new type UserSecretKey = Bytes<32>;
+export new type UserPublicKey = Bytes<32>;
+export new type AdminPublicKey = Bytes<32>;
 
 export ledger contractAdmin: AdminPublicKey;
 export ledger blacklist: Set<UserPublicKey>;
@@ -498,24 +496,23 @@ constructor() {
 // or anywhere the contract needs to identify the caller as a specific user.
 export pure circuit deriveUserPublicKey(sk: UserSecretKey, pin: Uint<16>): UserPublicKey {
     const pinBytes = persistentHash<Uint<16>>(pin);
-    return UserPublicKey {
-        bytes: persistentHash<Vector<3, Bytes<32>>>([
-            pad(32, "yourapp:user:pk:v1"),
-            pinBytes,
-            sk.bytes
-        ])
-    };
+    // Hash the key directly (no pad). The Bytes<N> on the domain separator is
+    // the string's exact byte length: "yourapp:user:pk:v1" is 18 bytes.
+    return persistentHash<[Bytes<18>, Bytes<32>, UserSecretKey]>([
+        "yourapp:user:pk:v1",
+        pinBytes,
+        sk
+    ]) as UserPublicKey;
 }
 
 // Admin identity, stable across PIN rotation. The deployer's
 // `deriveAdminPublicKey(secret)` is pinned into `contractAdmin` at construction.
 export pure circuit deriveAdminPublicKey(sk: UserSecretKey): AdminPublicKey {
-    return AdminPublicKey {
-        bytes: persistentHash<Vector<2, Bytes<32>>>([
-            pad(32, "yourapp:admin:pk:v1"),
-            sk.bytes
-        ])
-    };
+    // "yourapp:admin:pk:v1" is 19 bytes.
+    return persistentHash<[Bytes<19>, UserSecretKey]>([
+        "yourapp:admin:pk:v1",
+        sk
+    ]) as AdminPublicKey;
 }
 
 // Admin guard. Replaces `assert(ownPublicKey() == admin, "...")`.
@@ -531,7 +528,7 @@ export circuit userAction(pin: Uint<16>): [] {
     const userPk = deriveUserPublicKey(getUserSecret(), pin);
     const disclosed = disclose(userPk);
     assert(!blacklist.member(disclosed), "Caller is blacklisted");
-    // use `disclosed.bytes` as the loan/state key for this caller
+    // use `disclosed as Bytes<32>` as the loan/state key for this caller
 }
 
 // Hand admin off without ever transmitting a private key. The new admin
@@ -540,7 +537,6 @@ export circuit userAction(pin: Uint<16>): [] {
 export circuit rotateAdmin(newAdmin: AdminPublicKey): [] {
     assert(contractAdmin == deriveAdminPublicKey(getUserSecret()), "Only admin");
     contractAdmin = disclose(newAdmin);
-    return [];
 }
 ```
 
@@ -556,11 +552,11 @@ export type PrivateState = {
 
 export const witnesses = {
   getUserSecret: ({ privateState }: WitnessContext<Ledger, PrivateState>):
-    [PrivateState, { bytes: Uint8Array }] => {
+    [PrivateState, Uint8Array] => {
     if (!privateState.userSecretKey || privateState.userSecretKey.length !== 32) {
       throw new Error("userSecretKey missing or wrong length");
     }
-    return [privateState, { bytes: privateState.userSecretKey }];
+    return [privateState, privateState.userSecretKey];
   },
 };
 ```
