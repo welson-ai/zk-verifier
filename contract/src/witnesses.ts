@@ -14,7 +14,7 @@
 // limitations under the License.
 
 import { Ledger } from './managed/zkloan-credit-scorer/contract/index.js';
-import { WitnessContext } from '@midnight-ntwrk/compact-runtime';
+import { WitnessContext } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 
 export type SchnorrSignature = {
   announcement: { x: bigint; y: bigint };

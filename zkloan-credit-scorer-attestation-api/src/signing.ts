@@ -1,4 +1,4 @@
-import { ecMulGenerator, type JubjubPoint } from '@midnight-ntwrk/compact-runtime';
+import { ecMulGenerator, type JubjubPoint } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 import { ZKLoanCreditScorer } from 'zkloan-credit-scorer-contract';
 const { pureCircuits } = ZKLoanCreditScorer;
 

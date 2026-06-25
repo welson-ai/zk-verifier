@@ -21,7 +21,7 @@ import {
   type JubjubPoint,
   transientHash,
   CompactTypeBytes,
-} from '@midnight-ntwrk/compact-runtime';
+} from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 import { Contract, type Ledger, ledger, pureCircuits } from '../managed/zkloan-credit-scorer/contract/index.js';
 import { type ZKLoanCreditScorerPrivateState, witnesses } from '../witnesses.js';
 import { createEitherTestUser } from './utils/address.js';

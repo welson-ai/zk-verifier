@@ -1,7 +1,7 @@
 import restify from 'restify';
 import { signCreditData, getPublicKey } from './signing.js';
 import type { AttestationRequest, AttestationResponse, ProviderInfoResponse, HealthResponse } from './types.js';
-import type { JubjubPoint } from '@midnight-ntwrk/compact-runtime';
+import type { JubjubPoint } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 
 export function createServer(providerSk: bigint, providerId: number): restify.Server {
   const server = restify.createServer({ name: 'zkloan-attestation-api' });

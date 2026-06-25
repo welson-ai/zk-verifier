@@ -14,10 +14,14 @@
 // limitations under the License.
 
 import 'dotenv/config';
-import { type ContractAddress, transientHash, CompactTypeBytes } from '@midnight-ntwrk/compact-runtime';
+import {
+  type ContractAddress,
+  transientHash,
+  CompactTypeBytes,
+} from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 import { ZKLoanCreditScorer, type ZKLoanCreditScorerPrivateState, witnesses } from 'zkloan-credit-scorer-contract';
-import * as ledger from '@midnight-ntwrk/ledger-v8';
-import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import * as ledger from '@midnight-ntwrk/midnight-js-protocol/ledger';
+import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
@@ -32,18 +36,21 @@ import {
 import { assertIsContractAddress } from '@midnight-ntwrk/midnight-js-utils';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
-// New wallet SDK imports
-import { HDWallet, Roles } from '@midnight-ntwrk/wallet-sdk-hd';
-import { WalletFacade } from '@midnight-ntwrk/wallet-sdk-facade';
-import { ShieldedWallet } from '@midnight-ntwrk/wallet-sdk-shielded';
-import { DustWallet } from '@midnight-ntwrk/wallet-sdk-dust-wallet';
+// Wallet SDK imports (consolidated through the @midnight-ntwrk/wallet-sdk barrel
+// introduced alongside Midnight.js 4.1.x / ledger-v8 8.1.0).
 import {
+  HDWallet,
+  Roles,
+  WalletFacade,
+  ShieldedWallet,
+  DustWallet,
+  UnshieldedWallet,
   createKeystore,
   InMemoryTransactionHistoryStorage,
+  WalletEntrySchema,
   PublicKey as UnshieldedPublicKey,
   type UnshieldedKeystore,
-  UnshieldedWallet,
-} from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
+} from '@midnight-ntwrk/wallet-sdk';
 import * as bip39 from '@scure/bip39';
 import { wordlist as english } from '@scure/bip39/wordlists/english.js';
 
@@ -96,7 +103,6 @@ export const joinContract = async (
   providers: ZKLoanCreditScorerProviders,
   contractAddress: string,
 ): Promise<DeployedZKLoanCreditScorerContract> => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contract = await findDeployedContract(providers as any, {
     contractAddress,
     compiledContract: zkLoanCompiledContract,
@@ -104,7 +110,7 @@ export const joinContract = async (
     initialPrivateState: getUserProfile(),
   });
   logger.info(`Joined contract at address: ${contract.deployTxData.public.contractAddress}`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   return contract as any;
 };
 
@@ -113,15 +119,16 @@ export const deploy = async (
   privateState: ZKLoanCreditScorerPrivateState,
 ): Promise<DeployedZKLoanCreditScorerContract> => {
   logger.info('Deploying ZKLoan Credit Scorer contract...');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const contract = await deployContract(providers as any, {
     compiledContract: zkLoanCompiledContract,
     privateStateId: 'zkLoanCreditScorerPrivateState',
     initialPrivateState: privateState,
-    args: [], // constructor takes no arguments
+    // Note: as of midnight-js 4.1.x, `args` is conditionally typed and must be
+    // omitted entirely when the contract constructor takes no arguments.
   });
   logger.info(`Deployed contract at address: ${contract.deployTxData.public.contractAddress}`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   return contract as any;
 };
 
@@ -512,7 +519,7 @@ export const initWalletWithSeed = async (seed: Buffer, config: Config): Promise<
 
   const shieldedSecretKeys = ledger.ZswapSecretKeys.fromSeed(derivationResult.keys[Roles.Zswap]);
   const dustSecretKey = ledger.DustSecretKey.fromSeed(derivationResult.keys[Roles.Dust]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const unshieldedKeystore = createKeystore(derivationResult.keys[Roles.NightExternal], config.networkId as any);
 
   // Separate configurations for each wallet type (matching example-counter pattern)
@@ -527,6 +534,9 @@ export const initWalletWithSeed = async (seed: Buffer, config: Config): Promise<
     },
     provingServerUrl: new URL(config.proofServer),
     relayURL,
+    // As of the wallet-sdk 1.x line, every wallet variant's default configuration
+    // (shielded/unshielded/dust) requires its own transaction-history storage.
+    txHistoryStorage: new InMemoryTransactionHistoryStorage(WalletEntrySchema),
   };
 
   const unshieldedConfig = {
@@ -535,7 +545,7 @@ export const initWalletWithSeed = async (seed: Buffer, config: Config): Promise<
       indexerHttpUrl: config.indexer,
       indexerWsUrl: config.indexerWS,
     },
-    txHistoryStorage: new InMemoryTransactionHistoryStorage(),
+    txHistoryStorage: new InMemoryTransactionHistoryStorage(WalletEntrySchema),
   };
 
   const dustConfig = {
@@ -550,6 +560,7 @@ export const initWalletWithSeed = async (seed: Buffer, config: Config): Promise<
     },
     provingServerUrl: new URL(config.proofServer),
     relayURL,
+    txHistoryStorage: new InMemoryTransactionHistoryStorage(WalletEntrySchema),
   };
 
   const unifiedConfig = {

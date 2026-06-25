@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { sign, generateKeyPair, signCreditData } from '../src/signing.js';
-import { ecMulGenerator, ecMul, ecAdd } from '@midnight-ntwrk/compact-runtime';
+import { ecMulGenerator, ecMul, ecAdd } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 import { ZKLoanCreditScorer } from 'zkloan-credit-scorer-contract';
 const { pureCircuits } = ZKLoanCreditScorer;
 

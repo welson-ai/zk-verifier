@@ -16,17 +16,19 @@
 
 ### Dependency versions
 
-The project targets ledger v8 and the 4.x Midnight JS SDK. See [Midnight's compatibility matrix](https://docs.midnight.network/relnotes/overview) for the full list.
+The project targets ledger v8.1 and the **4.1.x Midnight JS SDK**. See [Midnight's compatibility matrix](https://docs.midnight.network/relnotes/support-matrix) for the full list.
+
+> **Imports changed in Midnight JS 4.1.x.** The protocol packages (`ledger`, `compact-runtime`, `compact-js`, `onchain-runtime`, `platform-js`) are now consumed through the version-agnostic **`@midnight-ntwrk/midnight-js-protocol`** ACL package via subpath imports, and the per-package wallet SDKs are consolidated under the **`@midnight-ntwrk/wallet-sdk`** barrel. See [`CHANGELOG.md`](./CHANGELOG.md) for the full before/after migration map.
 
 | Component | Version |
 |---|---|
-| `@midnight-ntwrk/ledger-v8` | 8.0.3 |
-| `@midnight-ntwrk/compact-runtime` | 0.16.0 |
-| `@midnight-ntwrk/compact-js` | 2.5.0 |
-| `@midnight-ntwrk/midnight-js-*` | 4.0.4 |
+| `@midnight-ntwrk/midnight-js-protocol` (provides `/ledger`, `/compact-runtime`, `/compact-js` subpaths) | 4.1.1 |
+| ↳ wrapped ledger (`@midnight-ntwrk/midnight-js-protocol/ledger`) | 8.1.0 |
+| `@midnight-ntwrk/compact-runtime` (direct dep — imported by generated contract code) | 0.16.0 |
+| `@midnight-ntwrk/midnight-js-*` | 4.1.1 |
 | `@midnight-ntwrk/dapp-connector-api` | 4.0.1 |
-| `@midnight-ntwrk/wallet-sdk-facade` / `dust-wallet` / `hd` | 3.0.0 |
-| `@midnight-ntwrk/wallet-sdk-shielded` / `unshielded-wallet` | 2.1.0 |
+| `@midnight-ntwrk/wallet-sdk` (barrel — replaces `wallet-sdk-facade`/`-hd`/`-shielded`/`-dust-wallet`/`-unshielded-wallet`) | 1.1.0 |
+| `@midnight-ntwrk/wallet-sdk-address-format` | 3.1.2 |
 | Compact toolchain (`compact compile`) | 0.31.0 |
 | Compact language pragma | >= 0.22 && <= 0.23 |
 | Proof server image | `midnightntwrk/proof-server:8.0.3` |

@@ -37,7 +37,9 @@ export default defineConfig(({ mode }) => ({
       },
     },
     exclude: [
-      '@midnight-ntwrk/onchain-runtime',
+      // The onchain-runtime ships as a WASM package and must not be esbuild
+      // pre-bundled. As of Midnight JS 4.1.x it resolves to `onchain-runtime-v3`.
+      '@midnight-ntwrk/onchain-runtime-v3',
     ],
   },
   build: {
