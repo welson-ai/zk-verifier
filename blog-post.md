@@ -402,10 +402,10 @@ The ZK proof guarantees the private inputs satisfy the public outputs. A verifie
 
 ## TypeScript Integration
 
-While Compact handles the ZK circuits, the TypeScript SDK connects your dApp to the blockchain. The stable SDK (v3.0.0+) uses a `CompiledContract` pattern that bundles your contract, witnesses, and ZK assets:
+While Compact handles the ZK circuits, the TypeScript SDK connects your dApp to the blockchain. The SDK uses a `CompiledContract` pattern that bundles your contract, witnesses, and ZK assets. As of Midnight JS **4.1.x**, `compact-js` (and the other protocol packages) are imported through the version-agnostic `@midnight-ntwrk/midnight-js-protocol` ACL package:
 
 ```typescript
-import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { deployContract } from '@midnight-ntwrk/midnight-js-contracts';
 
 const zkLoanContract = CompiledContract.make('ZKLoanCreditScorer', Contract).pipe(
@@ -417,6 +417,8 @@ const deployed = await deployContract(providers, {
   compiledContract: zkLoanContract,
   privateStateId: 'zkLoanCreditScorerPrivateState',
   initialPrivateState,
+  // Note: `args` is conditionally typed in 4.1.x — omit it when the
+  // contract constructor takes no arguments (as ZKLoan's does).
 });
 ```
 

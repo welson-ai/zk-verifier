@@ -4,7 +4,7 @@
 
 import { type ZKLoanCreditScorerPrivateState } from '../../witnesses.js';
 import { pureCircuits, type Schnorr_SchnorrSignature } from '../../managed/zkloan-credit-scorer/contract/index.js';
-import { ecMulGenerator, type JubjubPoint } from '@midnight-ntwrk/compact-runtime';
+import { ecMulGenerator, type JubjubPoint } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
 import * as crypto from 'crypto';
 
 export const userProfiles = [

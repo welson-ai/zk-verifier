@@ -1,7 +1,7 @@
 import React, { type PropsWithChildren, createContext, useState, useCallback, useMemo } from 'react';
 import { Buffer } from 'buffer';
-import { type ContractAddress, transientHash, CompactTypeBytes } from '@midnight-ntwrk/compact-runtime';
-import * as ledger from '@midnight-ntwrk/ledger-v8';
+import { type ContractAddress, transientHash, CompactTypeBytes } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
+import * as ledger from '@midnight-ntwrk/midnight-js-protocol/ledger';
 import {
   BehaviorSubject,
   type Observable,
@@ -34,7 +34,7 @@ import { getNetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-
 import { MidnightBech32m, ShieldedAddress } from '@midnight-ntwrk/wallet-sdk-address-format';
 import { deployContract, findDeployedContract, submitCallTx } from '@midnight-ntwrk/midnight-js-contracts';
 import { type PrivateStateProvider } from '@midnight-ntwrk/midnight-js-types';
-import { CompiledContract } from '@midnight-ntwrk/compact-js';
+import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { ZKLoanCreditScorer, witnesses, type ZKLoanCreditScorerPrivateState } from 'zkloan-credit-scorer-contract';
 
 // Type for the ZKLoan contract
@@ -435,7 +435,8 @@ export const ZKLoanProvider: React.FC<Readonly<ZKLoanProviderProps>> = ({ logger
         compiledContract: zkLoanCompiledContract,
         privateStateId: 'zkLoanCreditScorerPrivateState',
         initialPrivateState: privateState,
-        args: [], // constructor takes no arguments
+        // Note: as of midnight-js 4.1.x, `args` is conditionally typed and must be
+        // omitted entirely when the contract constructor takes no arguments.
       });
 
       const deployedAddress = deployed.deployTxData.public.contractAddress;

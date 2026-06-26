@@ -1,5 +1,5 @@
-import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
-import { encodeContractAddress } from '@midnight-ntwrk/ledger-v8';
+import { encodeCoinPublicKey } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
+import { encodeContractAddress } from '@midnight-ntwrk/midnight-js-protocol/ledger';
 
 /**
  * @description Converts an ASCII string to its hexadecimal representation,

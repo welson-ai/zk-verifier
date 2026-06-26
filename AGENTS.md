@@ -228,13 +228,19 @@ export COMPACT_PATH=/path/to/libs:/another/path  # For module resolution
 ## 7. Tooling & Runtime
 
 ### Package Dependencies
+
+As of Midnight JS **4.1.x**, the protocol packages (`ledger`, `compact-runtime`, `compact-js`, `onchain-runtime`, `platform-js`) are consumed through the version-agnostic `@midnight-ntwrk/midnight-js-protocol` ACL package via subpath imports (e.g. `@midnight-ntwrk/midnight-js-protocol/compact-runtime`), and the wallet SDKs are consolidated under the `@midnight-ntwrk/wallet-sdk` barrel. `compact-runtime` is still kept as a direct dependency because the compiler-generated contract code imports it directly.
+
 ```json
 {
-    "@midnight-ntwrk/compact-runtime": "^0.x.x",
-    "@midnight-ntwrk/midnight-js-contracts": "^0.x.x",
-    "@midnight-ntwrk/wallet-api": "^0.x.x"
+    "@midnight-ntwrk/midnight-js-protocol": "4.1.1",
+    "@midnight-ntwrk/midnight-js-contracts": "4.1.1",
+    "@midnight-ntwrk/compact-runtime": "^0.16.0",
+    "@midnight-ntwrk/wallet-sdk": "1.1.0"
 }
 ```
+
+> Subpath imports from `@midnight-ntwrk/midnight-js-protocol/*` require `moduleResolution` set to `bundler`, `node16`, or `nodenext` in `tsconfig.json` (the legacy `node` resolver cannot read the package's `exports` map).
 
 ### Contract Instantiation (TypeScript)
 ```typescript
