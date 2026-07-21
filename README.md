@@ -1,6 +1,188 @@
-# The ZK Loan credit scorer dapp
+# ZKLoan Credit Scorer
 
-**Attribution: This project is built on the Midnight Network.**
+**A privacy-preserving credit scoring and loan application system built on Midnight Network**
+
+---
+
+## Product Idea
+
+The ZKLoan Credit Scorer is a decentralized application that revolutionizes the traditional credit evaluation process by leveraging zero-knowledge proofs to protect user privacy. In conventional financial systems, loan applicants must disclose sensitive personal information (credit scores, income, employment history) to lending institutions, creating significant data security risks and privacy concerns. This DApp demonstrates how Midnight's unique architecture enables confidential financial decision-making without exposing sensitive data on a public ledger. Users can prove their creditworthiness and receive loan approvals while keeping their financial profile completely private, addressing the fundamental privacy challenges in traditional lending while maintaining the integrity and transparency of blockchain-based transactions.
+
+---
+
+## Public State vs Private Witness
+
+### Understanding Midnight's Dual-State Architecture
+
+Midnight contracts operate across two distinct execution contexts, enabling a revolutionary approach to privacy-preserving smart contracts:
+
+#### Public Ledger State
+- **Storage**: On-chain, visible to all network participants
+- **Visibility**: Publicly recorded and verifiable
+- **Purpose**: Stores non-sensitive outcomes and public data
+- **Examples**: Loan approval status, authorized amounts, contract configuration
+
+#### Private Witness State
+- **Storage**: Off-chain, on the user's local machine
+- **Visibility**: Only accessible to the user
+- **Purpose**: Holds sensitive data and private inputs
+- **Examples**: Credit scores, income information, secret PINs, private keys
+
+### The Bridge: Zero-Knowledge Proofs
+
+The connection between these two worlds is established through zero-knowledge proofs:
+
+1. **Private Computation**: Complex business logic executes off-chain using private witness data
+2. **Proof Generation**: The system generates cryptographic proofs that the computation was performed correctly
+3. **Public Verification**: On-chain components verify these proofs without seeing the underlying private data
+4. **State Update**: Only the non-sensitive results are recorded on the public ledger
+
+### In the ZKLoan Credit Scorer
+
+**Private Witness Data:**
+- `Applicant` struct containing creditScore, monthlyIncome, monthsAsCustomer
+- User's secret PIN for identity derivation
+- Private signing keys
+
+**Public Ledger State:**
+- `LoanApplication` struct with authorizedAmount and loanStatus
+- User blacklist for security
+- Attestation provider registry
+- Admin role information
+
+**Key Benefit**: The contract can evaluate loan eligibility based on sensitive financial data while only revealing the final decision (approved/rejected/amount) on the blockchain.
+
+---
+
+## Project Structure
+
+```
+zkloan-credit-scorer/
+├── contract/                              # Compact smart contract
+│   ├── src/
+│   │   ├── zkloan-credit-scorer.compact  # Main contract logic
+│   │   ├── schnorr.compact               # Schnorr signature verification
+│   │   ├── witnesses.ts                  # TypeScript witness implementations
+│   │   ├── index.ts                      # Contract entry point
+│   │   ├── test/                         # Contract test suite
+│   │   │   └── zkloan-credit-scorer.test.ts
+│   │   └── managed/                      # Generated Compact artifacts
+│   │       └── zkloan-credit-scorer/
+│   │           ├── compiler/             # Compiler output
+│   │           ├── contract/            # JavaScript bindings
+│   │           ├── keys/                 # Prover/verifier keys
+│   │           └── zkir/                 # ZK intermediate representation
+│   ├── package.json
+│   └── tsconfig.json
+├── zkloan-credit-scorer-cli/              # Command-line interface
+│   ├── src/
+│   │   ├── api.ts                        # Contract deployment & interaction
+│   │   ├── cli.ts                        # Interactive CLI menu
+│   │   ├── config.ts                     # Network configurations
+│   │   ├── common-types.ts               # Shared type definitions
+│   │   ├── standalone.ts                 # Local network entry point
+│   │   ├── preprod-remote.ts             # Preprod network entry point
+│   │   └── wallet.ts                     # Wallet management
+│   ├── standalone.yml                    # Docker Compose for local network
+│   ├── .env.example                     # Environment variables template
+│   ├── .env                             # User configuration
+│   └── package.json
+├── zkloan-credit-scorer-ui/               # React frontend
+│   ├── src/
+│   │   ├── components/                   # UI components
+│   │   │   ├── ContractConnector.tsx
+│   │   │   ├── LoanForm.tsx
+│   │   │   ├── LoanList.tsx
+│   │   │   └── AdminPanel.tsx
+│   │   ├── contexts/                     # React context
+│   │   │   └── ZKLoanContext.tsx
+│   │   ├── utils/                        # Utility functions
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── public/
+│   │   ├── keys/                         # Prover keys (copied during build)
+│   │   └── zkir/                         # ZK IR files (copied during build)
+│   └── package.json
+├── zkloan-credit-scorer-attestation-api/  # Attestation signing service
+│   ├── src/
+│   │   ├── index.ts                      # Entry point
+│   │   ├── server.ts                     # Restify routes
+│   │   ├── signing.ts                    # Schnorr signing logic
+│   │   └── types.ts                      # Request/response types
+│   ├── test/
+│   └── package.json
+├── package.json                          # Root package (monorepo config)
+├── tsconfig.json                         # TypeScript configuration
+└── README.md
+```
+
+---
+
+## Architecture
+
+### System Components
+
+#### 1. Compact Smart Contract
+The core business logic written in Compact, Midnight's domain-specific language for ZK circuits. It handles:
+- Private credit evaluation using witness data
+- Public ledger state management
+- Zero-knowledge proof generation and verification
+- User identity derivation from private keys and PINs
+
+#### 2. TypeScript CLI
+Command-line interface for contract deployment and interaction:
+- Wallet management (mnemonic or hex seed)
+- Contract deployment to local or preprod networks
+- Loan request and management
+- Admin operations (blacklist, provider registration)
+- PIN change with batched migration
+
+#### 3. React UI
+Web interface for Preprod network interaction:
+- Lace wallet integration for signing transactions
+- Loan application forms
+- Real-time loan status tracking
+- Admin panel for contract management
+
+#### 4. Attestation API
+Trusted third-party service that signs credit data:
+- Schnorr signature generation on Jubjub curve
+- Provider registration and management
+- Signature verification in ZK circuits
+- Prevents data fabrication by malicious DApps
+
+### Data Flow
+
+#### Loan Application Process
+1. **User Input**: User provides loan amount and secret PIN
+2. **Private Data**: Credit profile retrieved from witness (off-chain)
+3. **ZK Evaluation**: Credit evaluation circuit runs privately
+4. **Proof Generation**: ZK proof generated for the evaluation
+5. **Attestation**: Credit data signed by attestation provider
+6. **Verification**: Contract verifies proof and signature
+7. **Public Update**: Loan status recorded on public ledger
+
+#### Identity System
+- **User Identity**: Derived from Zswap wallet key + secret PIN
+- **Privacy**: Different PINs create unlinkable identities
+- **Security**: PIN change migrates all loan records to new identity
+- **Admin Identity**: Derived from admin secret key (witness-based)
+
+### Network Configurations
+
+#### Standalone (Local)
+- **Node**: `ws://127.0.0.1:9944`
+- **Indexer**: `http://127.0.0.1:8088`
+- **Proof Server**: `http://127.0.0.1:6300`
+- **Network ID**: `undeployed`
+- **Wallet**: Pre-funded hex seed
+
+#### Preprod (Remote)
+- **Node**: `wss://rpc.preprod.midnight.network`
+- **Indexer**: `https://indexer.preprod.midnight.network/api/v4/graphql`
+- **Proof Server**: `http://127.0.0.1:6300` (local)
+- **Network ID**: `preprod`
+- **Wallet**: BIP39 mnemonic with tDUST
 
 ---
 
@@ -10,585 +192,161 @@
 
 - Node.js v22+
 - npm v10+
-- Docker + Docker Compose (for the local standalone network)
-- Compact toolchain 0.31.0 — install with the [`compact` devtool](https://docs.midnight.network/develop/tutorial/building/prereqs#compact-developer-tools), then run `compact update`. Verify with `compact compile --version` (should print `0.31.0`)
-- For the remote testnet flow only: the [Midnight Lace wallet](https://chromewebstore.google.com/detail/lace/gafhhkghbfjjkeiendhlofajokpaflmk) browser extension
+- Docker + Docker Compose (for local network)
+- Compact toolchain 0.31.0
+- Midnight Lace wallet (for Preprod UI)
 
-### Dependency versions
-
-The project targets ledger v8.1 and the **4.1.x Midnight JS SDK**. See [Midnight's compatibility matrix](https://docs.midnight.network/relnotes/support-matrix) for the full list.
-
-> **Imports changed in Midnight JS 4.1.x.** The protocol packages (`ledger`, `compact-runtime`, `compact-js`, `onchain-runtime`, `platform-js`) are now consumed through the version-agnostic **`@midnight-ntwrk/midnight-js-protocol`** ACL package via subpath imports, and the per-package wallet SDKs are consolidated under the **`@midnight-ntwrk/wallet-sdk`** barrel. See [`CHANGELOG.md`](./CHANGELOG.md) for the full before/after migration map.
+### Dependency Versions
 
 | Component | Version |
 |---|---|
-| `@midnight-ntwrk/midnight-js-protocol` (provides `/ledger`, `/compact-runtime`, `/compact-js` subpaths) | 4.1.1 |
-| ↳ wrapped ledger (`@midnight-ntwrk/midnight-js-protocol/ledger`) | 8.1.0 |
-| `@midnight-ntwrk/compact-runtime` (direct dep — imported by generated contract code) | 0.16.0 |
-| `@midnight-ntwrk/midnight-js-*` | 4.1.1 |
-| `@midnight-ntwrk/dapp-connector-api` | 4.0.1 |
-| `@midnight-ntwrk/wallet-sdk` (barrel — replaces `wallet-sdk-facade`/`-hd`/`-shielded`/`-dust-wallet`/`-unshielded-wallet`) | 1.1.0 |
-| `@midnight-ntwrk/wallet-sdk-address-format` | 3.1.2 |
-| Compact toolchain (`compact compile`) | 0.31.0 |
-| Compact language pragma | >= 0.22 && <= 0.23 |
-| Proof server image | `midnightntwrk/proof-server:8.0.3` |
-| Indexer image | `midnightntwrk/indexer-standalone:4.0.1` |
-| Node image | `midnightntwrk/midnight-node:0.22.3` |
+| `@midnight-ntwrk/midnight-js-protocol` | 4.1.1 |
+| `@midnight-ntwrk/compact-runtime` | 0.16.0 |
+| `@midnight-ntwrk/wallet-sdk` | 1.1.0 |
+| Compact toolchain | 0.31.0 |
+| Proof server | `midnightntwrk/proof-server:8.0.3` |
 
-You'll end up with up to four terminals running at once: docker network, attestation API, CLI, UI. Follow the steps in order and each one produces what the next one needs.
+### Installation Steps
 
-### 1. Install dependencies
-
-From the repo root:
-
+1. **Install dependencies**
 ```bash
 npm install
 ```
 
-This installs all four workspaces (`contract`, `zkloan-credit-scorer-cli`, `zkloan-credit-scorer-ui`, `zkloan-credit-scorer-attestation-api`).
-
-### 2. Compile and build the contract
-
-Two steps — `compact compile` generates the Compact artifacts, then `tsc` packages them for the other workspaces to import:
-
+2. **Compile contract**
 ```bash
 cd contract
-npm run compact   # generates src/managed/ (JS bindings + prover/verifier keys + ZK IR)
-npm run build     # produces dist/ that CLI and UI consume
+npm run compact   # Generate managed/ directory
+npm run build     # Build dist/ output
 ```
 
-Optional — run the contract test suite:
-
-```bash
-npm test
-```
-
-### 3. Configure the CLI environment
-
-Before running the CLI, set the storage password. The level-private-state-provider encrypts the contract's private state (credit score, income, attestation signature) on disk; without a valid password, the CLI fails on startup.
-
+3. **Configure CLI**
 ```bash
 cd zkloan-credit-scorer-cli
 cp .env.example .env
 # Edit .env and set MIDNIGHT_STORAGE_PASSWORD
 ```
 
-Password rules (enforced by v4 of the provider):
-
-- ≥ 16 characters
-- At least 3 of: uppercase, lowercase, digits, special chars
-- No 4+ repeated identical chars in a row
-- No 4+ sequential char codes (e.g. `abcd`, `1234`)
-
-Losing this password means losing access to the encrypted private state on disk — the provider has no recovery mechanism.
-
-### 4. Start the local standalone network (for local runs)
-
-If you only plan to use the remote **Preprod** flow, skip to step 5.
-
-The standalone flow runs node + indexer + proof server locally via Docker Compose. The project ships a [`standalone.yml`](zkloan-credit-scorer-cli/standalone.yml) pinned to the versions above.
-
+4. **Start local network** (optional, for standalone mode)
 ```bash
-# Terminal A
-cd zkloan-credit-scorer-cli
 docker compose -f standalone.yml up -d
 ```
 
-Services come up on:
-
-- Node: `ws://127.0.0.1:9944`
-- Indexer: `http://127.0.0.1:8088`
-- Proof server: `http://127.0.0.1:6300`
-
-Wait ~15–20s for the node to become healthy (`docker compose -f standalone.yml ps`).
-
-### 5. Start the attestation API
-
-The attestation API signs credit data with a Schnorr signature on Jubjub; the contract verifies this signature inside the ZK circuit before processing a loan. **The CLI and UI both depend on this service being available — start it in its own terminal and leave it running.**
-
+5. **Start attestation API**
 ```bash
-# Terminal B — fresh terminal, leave it open
 cd zkloan-credit-scorer-attestation-api
 PROVIDER_SECRET_KEY="$(node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')"
 PORT=4000
 npm run dev
 ```
 
-On startup it prints three values you'll need in step 6:
+---
 
-- `Provider ID` (default `1`)
-- `Provider public key x`
-- `Provider public key y`
+## Usage
 
-Persisting `PROVIDER_SECRET_KEY` matters — every API restart without it generates a new Jubjub key, invalidating any on-chain registration. Save the generated hex somewhere safe (e.g. into a `.env` in this workspace) so you can reuse it.
-
-See [Attestation Service reference](#attestation-service) for the full env-var list.
-
-### 6. Run the CLI
-
-You have two options. Both use the `.env` from step 3.
-
-#### Option A — Standalone (local docker)
-
-Requires step 4.
+### Standalone Mode (Local)
 
 ```bash
-# Terminal C
 cd zkloan-credit-scorer-cli
 npm run standalone
 ```
 
-The CLI uses a pre-funded hex seed against the local `undeployed` network, so no faucet or wallet extension is required.
+### Preprod Mode (Remote)
 
-#### Option B — Preprod (remote)
-
-Requires a BIP39 mnemonic for a Preprod wallet funded with tDUST from the Preprod faucet. You **also need a local proof server running on port 6300** (already running if you did step 4; otherwise spin one up with `docker run --rm -p 6300:6300 midnightntwrk/proof-server:8.0.3 midnight-proof-server -v`).
-
-Add the mnemonic to your CLI `.env`:
-
+1. Add wallet mnemonic to `.env`:
 ```bash
-WALLET_MNEMONIC="<24-word BIP39 mnemonic>"
+WALLET_MNEMONIC="<your 24-word mnemonic>"
 ```
 
-Then:
-
+2. Start local proof server:
 ```bash
-# Terminal C
-cd zkloan-credit-scorer-cli
+docker run --rm -p 6300:6300 midnightntwrk/proof-server:8.0.3 midnight-proof-server -v
+```
+
+3. Run CLI:
+```bash
 npm run preprod-remote
 ```
 
-#### CLI menu — first actions
-
-After the wallet syncs, the menu prompts:
-
-```
-1. Deploy a new ZKLoan Credit Scorer contract
-2. Join an existing ZKLoan Credit Scorer contract
-3. Exit
-```
-
-Do the following **in order** on a fresh contract:
-
-1. **Deploy** (option 1). Save the printed contract address — the UI needs it, and so does any subsequent CLI session via option 2.
-2. **Register the attestation provider** (admin menu → option 8). Paste the `Provider ID`, `x`, and `y` values printed by the attestation API in step 5. Without this, every loan request will fail inside `evaluateApplicant` because the circuit asserts the provider is registered.
-3. From there you can request loans, respond to proposals, change PIN, display state, and run the other admin actions.
-
-### 7. Run the UI (Preprod only)
-
-The UI runs **only against Midnight Preprod** via the Midnight Lace browser extension. Local docker networks aren't supported — Lace cannot balance or sign transactions for the local `undeployed` chain. Use the CLI for any local iteration.
+### UI (Preprod Only)
 
 ```bash
-# Terminal D
 cd zkloan-credit-scorer-ui
-npm run dev              # dev server with hot reload
-npm run build            # production bundle
-npm run preview-build    # serve the built bundle locally
+npm run dev
 ```
 
-Available at `http://localhost:5173` (dev) or `http://localhost:4173` (preview).
-
-**To connect:**
-
-1. Install the [Midnight Lace wallet](https://chromewebstore.google.com/detail/lace/gafhhkghbfjjkeiendhlofajokpaflmk) extension and set it to the **Preprod** network.
-2. Fund the wallet with tDUST from the Preprod faucet.
-3. Make sure steps 5 and 6 (Preprod option) have already run — the attestation API is up, a Preprod contract is deployed, and the provider is registered on it.
-4. Open the UI, click **Connect Lace wallet**, then paste the contract address into **01 · Contract** and click Connect.
-5. Wait for Lace to finish syncing (the extension shows a `Wallet syncing (…%)` banner until it's done) before submitting a loan — mid-sync submissions fail with a generic "Transaction submission failed" error.
-
-### Project Structure
-
-```
-zkloan-credit-scorer/
-├── contract/                    # Compact smart contract
-│   ├── src/
-│   │   ├── zkloan-credit-scorer.compact
-│   │   ├── witnesses.ts         # TypeScript witness implementations
-│   │   └── test/                # Contract tests
-│   └── dist/                    # Compiled output
-├── zkloan-credit-scorer-cli/    # Command-line interface
-│   └── src/
-│       ├── api.ts               # Contract deployment & interaction
-│       ├── config.ts            # Network configurations
-│       └── common-types.ts      # Shared type definitions
-├── zkloan-credit-scorer-ui/     # React frontend
-│   ├── src/
-│   │   ├── components/          # UI components
-│   │   ├── contexts/            # React context (ZKLoanContext)
-│   │   └── utils/               # Utility functions
-│   └── public/
-│       ├── keys/                # Prover keys (copied during build)
-│       └── zkir/                # ZK IR files (copied during build)
-├── zkloan-credit-scorer-attestation-api/  # Attestation signing service
-│   ├── src/
-│   │   ├── index.ts               # Entry point
-│   │   ├── server.ts              # Restify routes
-│   │   ├── signing.ts             # Schnorr signing logic
-│   │   └── types.ts               # Request/response types
-│   └── test/
-└── README.md
-```
-
-### Attestation Service
-
-The attestation API is a trusted third-party service that signs credit data using Schnorr signatures on the Jubjub curve. The smart contract verifies these signatures inside the ZK circuit before processing loan applications, ensuring credit data cannot be fabricated by a malicious DApp.
-
-Startup is covered in [Step 5 — Start the attestation API](#5-start-the-attestation-api) above. This section is a reference.
-
-#### Environment variables
-
-| Variable | Description | Default |
-|---|---|---|
-| `PORT` | API server port | `4000` |
-| `PROVIDER_ID` | Provider identifier (registered on-chain with admin menu option 8) | `1` |
-| `PROVIDER_SECRET_KEY` | Provider signing key (32-byte hex). **Persist this across restarts** — each run without it generates a new Jubjub key and invalidates any on-chain registration | Random per run |
-| `NETWORK_ID` | Network ID set on startup | `undeployed` |
+Available at `http://localhost:5173`
 
 ---
 
+## Contract Features
 
+### User Actions
+- **Request Loan**: Submit loan application with private credit evaluation
+- **Respond to Proposal**: Accept or decline proposed loan amounts
+- **Change PIN**: Update secret PIN with batched loan migration
 
-## The Rationale of the ZKLoan Credit Scorer Example
+### Admin Actions
+- **Blacklist User**: Prevent malicious actors from using the DApp
+- **Remove Blacklist**: Restore user access
+- **Rotate Admin**: Transfer admin role to new derived key
+- **Register Provider**: Add attestation provider to contract
+- **Remove Provider**: Remove attestation provider
 
-The ZK Loan Credit Scorer is a decentralized application (DApp) designed to serve as a practical example of building on the Midnight stack. It showcases the powerful privacy-preserving capabilities of the Compact smart contract language and the MidnightJS library. The primary purpose of this application is to demonstrate how Midnight can apply the principle of rational privacy to solve real-world challenges, particularly in sensitive domains like financial services.
+### Credit Tiers
 
+| Tier | Credit Score | Monthly Income | Tenure | Max Loan |
+|---|---|---|---|---|
+| Tier 1 | ≥700 | ≥$2000 | ≥24 months | $10,000 |
+| Tier 2 | ≥600 | ≥$1500 | ≥12 months | $5,000 |
+| Tier 3 | ≥580 | ≥$1000 | ≥6 months | $2,500 |
 
-### The Problem with Traditional Credit Scoring
+---
 
-In the conventional financial world, applying for a loan is an invasive process. An individual must disclose a significant amount of sensitive, personally identifiable information (PII) to a lending institution. This data often includes their credit score, income, address, and employment history. This information is then processed and stored in centralized databases, creating several critical problems:
+## Testing
 
-- Data Security Risks: Centralized servers are high-value targets for malicious actors. A single data breach can expose the sensitive financial information of thousands or even millions of users.
-
-- Lack of User Control: Once submitted, users lose control over their data. They have little to no visibility into how it is stored, who has access to it, or how it is being used.
-
-- Unnecessary Disclosure: Often, the lending institution only needs to verify a few key assertions (e.g., "Is the applicant's credit score above 700?") but ends up collecting and storing the entire dataset, which is far more information than is strictly necessary for the decision.
-
-
-### Midnight's Solution: Rational Privacy in Action
-
-The ZKLoan Credit Scorer DApp directly addresses these issues by reimagining the credit evaluation process. It provides a clear example of how to build applications that can perform complex business logic on sensitive data without that data ever being exposed on a public ledger.
-
-This is made possible by Midnight's unique architecture, which is powered by the Kachina model for smart contracts. This model allows a contract to manage two distinct states simultaneously: a private state that remains securely on the user's local machine and a public state that is recorded on the blockchain.
-
-In the context of the ZKLoan DApp:
-
-- The Private State: The user's sensitive financial profile, defined by the Applicant struct (creditScore, monthlyIncome, etc.), is the private state. It is provided to the contract's logic as a witness and is never transmitted to the network.
-
-- The Public State: The final, non-sensitive outcome of the loan application is the public state, which is verifiably recorded on the ledger. The LoanApplication struct contains the authorized amount and a status that can be one of four values:
-  - `Approved`: The loan was granted as requested (or accepted by the user after a proposal)
-  - `Rejected`: The applicant did not meet minimum eligibility requirements
-  - `Proposed`: The requested amount exceeded the user's eligible tier; awaiting user decision
-  - `NotAccepted`: The user declined a proposed loan offer
-
-The bridge between these two worlds is the zero-knowledge proof. The contract's logic executes off-chain, evaluating the user's private data and generating a cryptographic proof. This proof confirms that the evaluation was performed correctly according to the predefined rules, without revealing any of the underlying private information. The on-chain component of the contract simply verifies this proof before updating the public ledger, ensuring both privacy and integrity.
-
-This elegant separation of concerns is why Midnight serves this purpose so well. It moves beyond the all-or-nothing privacy models of other blockchains, allowing developers to build applications that are both functional and confidential, striking the perfect balance needed for real-world adoption.
-
-Disclaimer: Please consider this DApp as a pure example intended for educational purposes and inspiration. It demonstrates key features of the Midnight platform and the Compact language. However, it is not intended to be used in a production environment. Some of the business logic and security patterns represented in the example have been simplified for clarity and may not be sufficiently robust for a real-world financial application.
-
-***
-
-
-## 2. Goals of the Example
-
-The ZKLoan Credit Scorer is designed to achieve two primary educational goals for developers new to the Midnight ecosystem. It demonstrates how to securely process private data within a smart contract and how to manage a moderately complex, relational data structure on the public ledger.
-
-
-### Goal 1: Demonstrating Private Data Processing
-
-A core objective of this example is to provide a clear, practical template for handling sensitive user information. It shows how to build business logic that depends on confidential data without ever exposing that data on-chain. This is the essence of building privacy-preserving DApps on Midnight.
-
-The contract achieves this through a distinct pattern:
-
-- Defining the Private Schema: The Applicant struct formally defines the structure of the user's private data, including their creditScore, monthlyIncome, and monthsAsCustomer. This data is intended to exist only in the user's off-chain environment.
-
-- Securely Inputting Private Data: The getRequesterScoringWitness() function serves as the secure gateway for this private data. It is a declaration that tells the Compact compiler that the DApp will provide an
-
-- Applicant object during the off-chain proof generation phase.
-
-- Executing Confidential Logic: The evaluateApplicant circuit is the heart of the private computation. It calls the witness to fetch the user's private
-
-- profile and executes the multi-tiered credit evaluation logic based on that data. Crucially, this entire circuit runs off-chain; its logic and the private data it processes are never seen by the public network. Only the
-
-- _Result_, the approved loan amount and status is returned.
-
-This deliberate separation showcases how developers can build powerful applications that can be trusted to make decisions based on sensitive information while providing cryptographic guarantees that the information itself remains completely private.
-
-
-### Goal 2: Managing Complex Public State
-
-The second goal is to move beyond simple key-value storage and demonstrate a more realistic on-chain data architecture using Midnight's built-in Ledger Abstract Data Types (ADTs). The example uses a nested map to create a relational structure that associates users with their multiple loan applications.
-
-The key public state in the contract is the loans ledger:
-
-```
-export ledger loans: Map<Bytes<32>, Map<Uint<16>, LoanApplication>>;
+Run the contract test suite:
+```bash
+cd contract
+npm test
 ```
 
-This structure is a powerful example of how to organize complex data on-chain:
+The test suite includes 61 tests covering:
+- Credit evaluation logic
+- Loan application flow
+- Admin operations
+- PIN migration
+- Attestation verification
+- Edge cases and error handling
 
-- The Outer Map (User Directory): The first layer of the map uses a Bytes<32> key. This key is a unique, privacy-preserving public identifier derived from the user's underlying Zswap key and their secret PIN. It acts as the primary key for a user, mapping their identifier to their personal collection of loans.
+---
 
-- The Inner Map (User's Loan History): The value associated with each user is another Map. This nested map allows a single user to have multiple, distinct loan applications.
+## Security Considerations
 
-  - The key of this inner map is a Uint<16>, which functions as an auto-incrementing loanId for each new application.
+### Privacy Guarantees
+- Credit scores and income never leave user's device
+- Zero-knowledge proofs verify computation without data exposure
+- Identity unlinkability through PIN changes
 
-  - The value is the LoanApplication struct, containing the public, non-sensitive outcome of that specific loan evaluation.
+### Security Patterns
+- Witness-derived admin authorization (not `ownPublicKey()`)
+- Schnorr signature verification for attestation
+- Blacklist mechanism for malicious actors
+- Explicit disclosure control with `disclose()`
 
-The contract demonstrates how to interact with this nested structure using standard Ledger ADT methods like
+### Important Notes
+- This is an educational example, not production-ready
+- Business logic simplified for clarity
+- Requires additional security audits for real financial use
 
-`.member()` to check for existence, `.insert()` to add new data, `.lookup()` to access nested data, and `.size()` to count items. Additionally, the
+---
 
-`onGoingPinMigration` ledger is used to showcase state management for more complex, multi-transaction processes like the batched changePin functionality
+## License
 
+Apache-2.0
 
-#### Goal 3: Demonstrating Ledger Item Migration
+---
 
-The third goal is to illustrate an advanced, but common, pattern in ZK-based smart contracts: migrating a collection of ledger items associated with one key to another. This is demonstrated through the changePin circuit, which allows a user to change their secret PIN, effectively changing their public identifier, without losing their loan history.
+## Attribution
 
-Because Compact circuits cannot iterate over collections of a variable, runtime-deﬁned size, a simple loop to move all of a user's loans is not possible. The example solves this with a hybrid batched migration pattern:
-
-- Fixed-Batch On-Chain Logic: The changePin circuit is designed to process a fixed-size batch of loans in a single transaction. It uses a for...of loop over a Vector of a constant size, which is a valid operation in Compact. The onGoingPinMigration ledger is used to track the last migrated loan ID, allowing subsequent calls to the circuit to pick up where the last one left off.
-
-- Off-Chain Orchestration: The responsibility for iterating through _all_ of a user's loans is moved to the off-chain DApp (written in TypeScript). The DApp reads the total number of loans and then calls the changePin circuit repeatedly in separate transactions, each time processing the next batch until the entire migration is complete.
-
-This pattern is a crucial technique for developers to understand, as it provides a scalable and secure way to perform bulk operations on on-chain data collections while adhering to the fixed-computation constraints required for generating zero-knowledge proofs
-
-Of course. Here is the documentation for the third item, "Contract features".
-
-***
-
-
-### 3. Contract Features
-
-The ZKLoan Credit Scorer contract is designed with two distinct roles: the User (or applicant) and the Admin. Each role has access to a specific set of actions that govern the lifecycle of a loan application and the administration of the DApp. The user flow is designed to be straightforward for applicants while providing the necessary administrative controls to maintain the integrity of the system.
-
-
-#### The User Role
-
-The primary user of the DApp is an individual seeking a loan. Their interactions are focused on managing their application and their identity within the system. A user is identified not by a traditional username, but by a privacy-preserving public key derived from their underlying Zswap wallet key and a secret PIN. This ensures that their on-chain activities are not directly linkable to their real-world identity.
-
-User Actions:
-
-- Requesting a Loan (requestLoan): This is the core function for a user. To apply for a loan, the user provides two public inputs: the amountRequested and their secretPin. The contract then executes the private credit evaluation, generates a zero-knowledge proof, and records the public outcome on the ledger. This action is atomic; a user cannot request a loan if their public key is on the blacklist or if they have a PIN change in progress.
-
-  **Important**: If the requested amount exceeds the user's eligible tier maximum, the loan is not auto-approved at a reduced amount. Instead, it enters a `Proposed` status, allowing the user to review and explicitly accept or decline the offered amount.
-
-- Responding to a Loan Proposal (respondToLoan): When a loan is in `Proposed` status (because the requested amount exceeded the user's eligibility), the user must explicitly respond. This circuit takes the loanId, the user's secretPin, and a boolean accept parameter. If the user accepts, the loan status changes to `Approved`. If declined, the status becomes `NotAccepted` and the authorized amount is set to zero. This ensures users always have agency over their financial decisions and are never surprised by receiving less than they requested.
-
-- Changing a PIN (changePin): A user can change the secret PIN associated with their public identifier. This is a crucial feature for account security and recovery. Because a user can have multiple loan applications, this action is designed as a multi-transaction, batched process. The user calls the changePin circuit repeatedly. In each call, the circuit migrates a fixed-size batch of their loan records from the old public key to the new one. The onGoingPinMigration ledger tracks the progress, ensuring the migration can be safely paused and resumed. This batched approach is a necessary design pattern to handle an unknown number of on-chain records without violating the fixed-computation limits of a zero-knowledge circuit.
-
-
-#### The Admin Role
-
-The Admin role is responsible for the overall health and security of the DApp. Authorization uses the **witness-derived keypair pattern**: the deploying admin generates a 32-byte secret locally, the constructor computes its hash and stores that hash in the ledger field `contractAdmin`. Every admin circuit then asserts `contractAdmin == deriveAdminPublicKey(getUserSecret())` inside the ZK proof, which forces the caller to know the preimage of the public value. The ledger value alone cannot be replayed, because possession of the secret is what satisfies the constraint.
-
-The role can be handed off via `rotateAdmin(newAdmin: AdminPublicKey)`. The next admin generates their own secret, computes their derived public key off-chain, and shares only that 32-byte value with the current admin. No private key is ever transmitted.
-
-Admin Actions:
-
-- Blacklisting a User (blacklistUser): The admin has the authority to add a user's Zswap public key to the on-chain blacklist. This is a security feature to prevent malicious or non-compliant actors from interacting with the DApp. A user on the blacklist will not be able to submit a loan application.
-
-- Removing a User from the Blacklist (removeBlacklistUser): The admin can also remove a user from the blacklist, restoring their ability to apply for loans.
-
-- Rotating the Admin Role (rotateAdmin): Replaces `contractAdmin` with a new derived public key generated by the next admin.
-
-This role-based access control is enforced by zero-knowledge constraints rather than by checking `ownPublicKey()`. Earlier versions of this README documented an `ownPublicKey() == admin` check; that check was insecure (the ledger value is public, so any chain reader could replay it) and has been replaced.
-
-
-### 4. Circuit Logic and Design Decisions
-
-This section provides a detailed breakdown of each circuit within the ZKLoan Credit Scorer contract. The design of these circuits balances the need for complex business logic with the strict requirements of zero-knowledge proof systems, resulting in a secure and efficient application.
-
-
-
-#### evaluateApplicant Circuit
-
-Logic:
-
-```
-circuit evaluateApplicant(): [Uint<16>, LoanStatus] {
-
-     const profile = getRequesterScoringWitness();
-
-    // Tier 1: Best applicants
-    if (profile.creditScore >= 700 && profile.monthlyIncome >= 2000 && profile.monthsAsCustomer >= 24) {
-        return [10000, LoanStatus.Approved];
-
-    }
-
-    // ... other tiers ...
-
-    else {
-        return [0, LoanStatus.Rejected];
-    }
-
-}
-```
-
-Design Decisions: This circuit represents the core of the DApp's confidential business logic. Its design is centered on the principle of separating private computation from public state changes.
-
-- Off-Chain Execution: This circuit is designed to be executed entirely off-chain. It takes the user's private financial data from the getRequesterScoringWitness and performs the multi-tiered loan eligibility check.
-
-- No Public State Interaction: Notice that this circuit does not interact with any ledger variables. This is a deliberate choice to keep it "pure" in terms of its interaction with the public state, ensuring that no private data can accidentally leak during the evaluation.
-
-- Returning Only the Outcome: The circuit is designed to return only the final, non-sensitive results of the evaluation: the maximum loan amount (topTierAmount) and the LoanStatus. This minimal output is all that's needed for the on-chain part of the transaction.
-
-
-#### createLoan Circuit
-
-Logic:
-
-```
-circuit createLoan(requester: Bytes<32>, amountRequested: Uint<16>, topTierAmount: Uint<16>, status: LoanStatus): \[] {
-
-    const authorizedAmount = amountRequested > topTierAmount ? topTierAmount : amountRequested;
-
-    if(!loans.member(requester)) {
-
-        loans.insert(requester, default\<Map\<Uint<16>, LoanApplication>>);
-
-    }
-
-    const userLoans = loans.lookup(requester);
-    const totalLoans = userLoans.size();
-    const loanNumber = totalLoans + 1;
-    const loan = LoanApplication { ... };
-
-    userLoans.insert(loanNumber as Uint<16>, disclose(loan));  
-
-    return [];
-
-}
-```
-
-Design Decisions: This circuit is responsible for all interactions with the loans ledger. Its design focuses on correctly managing the nested map data structure.
-
-- Auto-Incrementing loanId: The loanNumber is calculated by reading the current size() of the user's inner loan map and adding one. This provides a simple and effective way to generate a unique, sequential ID for each new loan a user requests.
-
-- Handling New Users: The if(!loans.member(requester)) check is crucial. Before attempting to add a loan, the circuit checks if the user has an existing entry in the outer map. If not, it first initializes their personal inner Map for loans, preventing errors.
-
-- Explicit Disclosure: The final disclose(loan) call is a critical part of the design. The `disclose()` wrapper doesn't cause disclosure itself—it's a conscious acknowledgment that the LoanApplication object (derived from private evaluation) will become public when written to the ledger. Without this wrapper, the compiler would reject the code to prevent accidental exposure of witness data.
-
-- Proposal Flow Logic: The circuit now determines the final loan status based on whether the requested amount exceeds the user's eligible tier maximum. If `amountRequested > topTierAmount`, the loan enters `Proposed` status instead of being auto-approved at a reduced amount. This design gives users explicit control over accepting different terms than they originally requested.
-
-
-#### respondToLoan Circuit
-
-Logic:
-
-```
-export circuit respondToLoan(loanId: Uint<16>, secretPin: Uint<16>, accept: Boolean): [] {
-    const requesterPubKey = deriveUserPublicKey(getUserSecret(), secretPin);
-    const disclosed = disclose(requesterPubKey);
-
-    assert(!blacklist.member(disclosed), "User is blacklisted");
-    assert(loans.member(disclosed as Bytes<32>), "No loans found for this user");
-    assert(loans.lookup(disclosed as Bytes<32>).member(disclose(loanId)), "Loan not found");
-
-    const existingLoan = loans.lookup(disclosed as Bytes<32>).lookup(disclose(loanId));
-    assert(existingLoan.status == LoanStatus.Proposed, "Loan is not in Proposed status");
-
-    const updatedLoan = accept
-        ? LoanApplication { authorizedAmount: existingLoan.authorizedAmount, status: LoanStatus.Approved }
-        : LoanApplication { authorizedAmount: 0, status: LoanStatus.NotAccepted };
-
-    loans.lookup(disclosed as Bytes<32>).insert(disclose(loanId), disclose(updatedLoan));
-}
-```
-
-Design Decisions: This circuit enables users to respond to loan proposals, completing the two-phase approval flow for cases where the requested amount exceeded eligibility.
-
-- User Agency: Rather than auto-approving loans at reduced amounts, this circuit gives users explicit control. They can review the proposed amount and make an informed decision to accept or decline.
-
-- Identity Verification: The circuit derives the caller's public key from their witness secret (`getUserSecret()`) and PIN — never from `ownPublicKey()`, which is prover-supplied and forgeable. Only the holder of the secret can produce a derived key matching a stored loan, so only the loan owner can respond.
-
-- State Validation: Multiple assertions ensure the loan exists and is in the correct `Proposed` status before allowing any modification.
-
-- Clean State Transitions: If accepted, the loan moves to `Approved` with the original authorized amount preserved. If declined, the loan moves to `NotAccepted` with the amount set to zero, providing a clear audit trail of the user's decision.
-
-
-#### requestLoan Circuit
-
-Logic:
-
-```
-export circuit requestLoan(amountRequested:Uint<16>, secretPin: Uint<16>): [] {
-    const requesterPubKey = deriveUserPublicKey(getUserSecret(), secretPin);
-    const disclosed = disclose(requesterPubKey);
-
-    assert(!blacklist.member(disclosed), "Requester is blacklisted");
-
-    // ... PIN-migration guard ...
-
-    // Bind the attestation to this caller's derived identity
-    const userPubKeyHash = transientHash<Bytes<32>>(disclosed as Bytes<32>);
-    const [topTierAmount, status] = evaluateApplicant(userPubKeyHash);
-    const disclosedTopTierAmount = disclose(topTierAmount);
-    const disclosedStatus = disclose(status);
-    createLoan(disclosed as Bytes<32>, amountRequested, disclosedTopTierAmount, disclosedStatus);
-}
-```
-
-Design Decisions: This circuit acts as the main entry point and orchestrator for the loan application process. Its design is to safely manage the flow of data from private inputs to public outputs.
-
-- Orchestration Role: It doesn't contain the core business logic itself but instead calls other specialized circuits (deriveUserPublicKey, evaluateApplicant, createLoan) to perform specific tasks. This separation of concerns makes the contract cleaner and easier to maintain.
-
-- Safety Checks: It performs initial safety checks, such as verifying that the user is not on the blacklist and is not in the middle of a PIN change, ensuring the integrity of the system before proceeding with the more computationally expensive evaluation.
-
-- Managing Disclosure: This circuit is where the programmer consciously acknowledges what will become public. It takes the private results from evaluateApplicant and wraps them with `disclose()` to signal that these values are intentionally being passed to operations that will make them public (the createLoan circuit writes to the ledger). This is the central point of control for the contract's privacy—without these `disclose()` calls, the compiler would reject the code.
-
-
-#### changePin Circuit
-
-Logic:
-
-```
-export circuit changePin(oldPin: Uint<16>, newPin: Uint<16>): [] {
-    const oldPk = deriveUserPublicKey(getUserSecret(), oldPin);
-    const newPk = deriveUserPublicKey(getUserSecret(), newPin);
-
-    // ... safety checks and initialization ...
-
-    const lastMigratedLoan = onGoingPinMigration.lookup(disclose(oldPk) as Bytes<32>);
-    // Vector of fixed size 5 is created
-
-    const loansIds: Vector<5, Uint<16>> = [
-        (lastMigratedLoan + 1) as Uint<16>,
-        // ... and so on for 5 elements
-
-    ];
-
-    for (const currentLoan of loansIds) {
-        if (loans.lookup(oldPk).member(currentLoan)) {
-            // ... move the loan from oldPk to newPk ...
-            onGoingPinMigration.insert(disclose(oldPk), currentLoan);
-
-        } else {
-            // If a loanId is not found, it signals the end of the migration.
-            onGoingPinMigration.remove(disclose(oldPk));
-            loans.remove(disclose(oldPk));
-            return \[];
-
-        }
-
-    }
-
-    // ...
-
-}
-```
-
-Design Decisions:
-
-This circuit is the most technically complex part of the DApp and demonstrates an advanced but essential pattern for handling on-chain collections in a ZK environment.
-
-- The "No Variable Loop" Constraint: The entire design is built around a fundamental rule of Compact: circuits cannot have loops that run a variable number of times. This is because the computational cost of a circuit must be fixed at compile time to generate a valid and secure zero-knowledge proof.
-
-- The Batched Migration Pattern: To work around this, the circuit is designed to migrate a fixed-size batch of 5 loans in a single transaction. This is enforced by defining the loansIds variable as a Vector<5, Uint<16>>. Because the size is a compile-time constant, the subsequent for...of loop has a predictable, fixed workload, which is a valid operation in Compact.
-
-- Stateful Progress Tracking: The onGoingPinMigration ledger is a critical design element. It stores the ID of the last loan that was successfully migrated for a user. This allows the DApp to call the changePin circuit multiple times. Each call uses this ledger to determine the starting point for the next batch of 5 loans, creating a resilient, multi-transaction workflow that can handle any number of total loans.
-
-- Calculating loansIds: The loansIds vector is constructed directly in a single expression: \[(lastMigratedLoan + 1) as Uint<16>, ...]. This design is a direct consequence of another Compact rule: you cannot assign values to a Vector's elements using a variable index inside a loop. By constructing the vector all at once, we create a valid, fixed-size collection that can then be iterated over. The explicit as Uint<16> casts are necessary to override the compiler's automatic type widening during arithmetic operations, ensuring the types match the Vector's declaration.
-
-- Signaling Migration Completion: The circuit includes a clever mechanism to signal that all loans have been migrated. When the for loop attempts to process a loanId that does not exist in the user's old loan map, the else block is triggered. This block cleans up the state by removing the user's now-empty old loan map and their entry in the onGoingPinMigration tracker, gracefully concluding the process.
+Built on the Midnight Network. Demonstrates privacy-preserving smart contracts using the Compact language and MidnightJS SDK.
