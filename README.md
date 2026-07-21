@@ -9,7 +9,7 @@
 | **Fully functional dApp** | [Live Demo](https://zk-verifier-zkloan-credit-scorer-ui-vert.vercel.app/) |
 | **Minimum 3 tests passing** | ![Tests Passing](public/images/img1.png) |
 | **CI/CD pipeline passing** | ![CI/CD Pipeline](public/images/img2.png) |
-| **Approved idea** | ZKLoan Credit Scorer (approved via submission template). |
+| **Approved idea** | **Age / Eligibility Gate** (ZKLoan Credit Scorer) |
 | **10+ meaningful commits** | See git history. |
 
 ---
