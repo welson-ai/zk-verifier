@@ -1,7 +1,7 @@
 name: CI
 
-# Lock down top-level permissions. Grant per-job.
-permissions: {}
+permissions:
+  contents: read
 
 on:
   push:
@@ -10,49 +10,20 @@ on:
     branches: [main]
 
 jobs:
-  install-and-test:
+  build-contract:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read             # only need to checkout code
     steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-
-      # The CLI integration test spins a standalone Midnight network via
-      # testcontainers; mirror image pulls through gcr to avoid Docker Hub rate limits.
-      - name: Prefer Google mirror globally
-        run: |
-          echo '{"registry-mirrors":["https://mirror.gcr.io"]}' | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
-
-      - name: Setup Compact Compiler
-        uses: midnightntwrk/setup-compact-action@836895c8fffbbea6bd986af2b17e8941ff29d1f8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: midnightntwrk/setup-compact-action@836895c8fffbbea6bd986af2b17e8941ff29d1f8
         with:
           compact-version: '0.31.0'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install Node.js
-        # Pinned to 22 (the project's minimum supported engine): restify, used
-        # by the attestation API, pulls spdy -> http-deceiver, which calls the
-        # process.binding('http_parser') internal removed in Node 23+. Node 24
-        # therefore breaks `require('restify')` at import. Revisit if/when the
-        # attestation API migrates off restify.
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: '22'
-
-      # npm < 11 mishandles platform-specific optional dependencies, breaking the
-      # build. setup-node still ships an older npm. See https://github.com/npm/cli/issues/4828
-      - name: Update NPM
-        run: |
-          npm install -g npm@latest
-          npm --version
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Contract must build first: it emits dist/managed (keys + zkir) that the UI copies.
+      - run: npm install -g npm@latest
+      - run: npm ci
       - name: Compile and test contract
         working-directory: contract
         run: |
@@ -62,12 +33,30 @@ jobs:
           npm run build
           npm run test
 
+  build-api:
+    runs-on: ubuntu-latest
+    needs: build-contract
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: '22'
+      - run: npm ci
       - name: Build and test attestation API
         working-directory: zkloan-credit-scorer-attestation-api
         run: |
           npm run build
           npm run test
 
+  build-cli:
+    runs-on: ubuntu-latest
+    needs: build-contract
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: '22'
+      - run: npm ci
       - name: Compile and test CLI
         working-directory: zkloan-credit-scorer-cli
         run: |
@@ -76,6 +65,15 @@ jobs:
           npm run build
           npm run test-api
 
+  build-ui:
+    runs-on: ubuntu-latest
+    needs: build-contract
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: '22'
+      - run: npm ci
       - name: Build UI
         working-directory: zkloan-credit-scorer-ui
         run: |
