@@ -14,7 +14,12 @@
 
 ---
 
-## Product Idea
+
+## Product Proposal: Eligibility Gate
+
+Our application fits the **Age / Eligibility Gate** category. 
+
+By utilizing Midnight’s zero-knowledge circuits, the **ZKLoan Credit Scorer** allows applicants to prove they meet specific creditworthiness thresholds (e.g., "Score ≥ 700") without ever revealing their actual credit score, income, or employment history to the lending institution. This provides a privacy-preserving "Eligibility Gate" for financial services, where sensitive data remains local to the user, and only the proof of eligibility is verified on the public ledger.
 
 The ZKLoan Credit Scorer is a decentralized application that revolutionizes the traditional credit evaluation process by leveraging zero-knowledge proofs to protect user privacy. In conventional financial systems, loan applicants must disclose sensitive personal information (credit scores, income, employment history) to lending institutions, creating significant data security risks and privacy concerns. This DApp demonstrates how Midnight's unique architecture enables confidential financial decision-making without exposing sensitive data on a public ledger. Users can prove their creditworthiness and receive loan approvals while keeping their financial profile completely private, addressing the fundamental privacy challenges in traditional lending while maintaining the integrity and transparency of blockchain-based transactions.
 
