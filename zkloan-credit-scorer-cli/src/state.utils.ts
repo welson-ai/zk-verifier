@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { webcrypto } from 'node:crypto';
-import { type ZKLoanCreditScorerPrivateState } from 'zkloan-credit-scorer-contract';
+import { type ZKLoanCreditScorerPrivateState } from '@contract/zkloan-credit-scorer/contract/index.js';
 
 // Generate a fresh 32-byte user secret. This single value drives all
 // identity in the contract: the admin role (whoever's

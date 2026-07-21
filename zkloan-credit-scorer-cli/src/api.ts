@@ -19,7 +19,7 @@ import {
   transientHash,
   CompactTypeBytes,
 } from '@midnight-ntwrk/midnight-js-protocol/compact-runtime';
-import { ZKLoanCreditScorer, type ZKLoanCreditScorerPrivateState, witnesses } from 'zkloan-credit-scorer-contract';
+import { ZKLoanCreditScorer, type ZKLoanCreditScorerPrivateState, witnesses } from '@contract/zkloan-credit-scorer/contract/index.js';
 import * as ledger from '@midnight-ntwrk/midnight-js-protocol/ledger';
 import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { deployContract, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';

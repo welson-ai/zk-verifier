@@ -2,6 +2,16 @@
 
 **A privacy-preserving credit scoring and loan application system built on Midnight Network**
 
+## Submission Requirements
+
+| Requirement | Evidence |
+| :--- | :--- |
+| **Fully functional dApp** | See documentation and repository structure. |
+| **Minimum 3 tests passing** | ![Tests Passing](public/images/img1.png) |
+| **CI/CD pipeline passing** | ![CI/CD Pipeline](public/images/img2.png) |
+| **Approved idea** | ZKLoan Credit Scorer (approved via submission template). |
+| **10+ meaningful commits** | See git history. |
+
 ---
 
 ## Product Idea
@@ -118,7 +128,25 @@ zkloan-credit-scorer/
 
 ---
 
-## Architecture
+## Privacy Model
+
+### What an observer can and cannot learn
+By leveraging Midnight's privacy-preserving architecture, the ZKLoan Credit Scorer provides clear boundaries regarding data visibility:
+
+| Data Point | Observer Learns | Privacy Mechanism |
+| :--- | :--- | :--- |
+| **Credit Score** | Nothing | Stays in private witness; ZK proof verifies eligibility threshold only. |
+| **Monthly Income** | Nothing | Stays in private witness; verified via ZK proof. |
+| **Loan Status** | Yes (Approved/Rejected/Proposed) | Publicly recorded on-chain for ledger integrity. |
+| **Loan Amount** | Yes (if approved) | Publicly recorded on-chain. |
+| **Applicant Identity** | Nothing | Derived from secret PIN; unlinkable to wallet or real-world identity. |
+| **Provider Registry** | Yes | Public registry of trusted attestation providers. |
+| **Blacklist** | Yes | Public set of blacklisted user public keys. |
+
+**Key Privacy Properties:**
+- **Zero-Knowledge Evaluation:** All business logic involving sensitive applicant data executes off-chain. The public ledger only sees the final result, not the process or inputs.
+- **Unlinkable Identity:** Because every user's public key is derived from their unique secret and a PIN, an observer cannot correlate loan requests or contract interactions with a specific wallet address or a previous identity unless the user chooses to link them.
+- **Selective Disclosure:** The `disclose()` mechanism ensures that only data strictly required for on-chain state updates (e.g., loan status) is ever made public.
 
 ### System Components
 

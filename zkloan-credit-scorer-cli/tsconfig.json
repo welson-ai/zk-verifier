@@ -19,7 +19,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@contract/*": ["../../contract/src/*"]
+      "@contract/*": ["../../contract/managed/*"]
     }
   }
 }

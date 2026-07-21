@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { ZKLoanCreditScorer, type ZKLoanCreditScorerPrivateState } from 'zkloan-credit-scorer-contract';
+import { ZKLoanCreditScorer, type ZKLoanCreditScorerPrivateState } from '@contract/zkloan-credit-scorer/contract/index.js';
 import type { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 import type { DeployedContract, FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
 
