@@ -6,7 +6,7 @@
 
 | Requirement | Evidence |
 | :--- | :--- |
-| **Fully functional dApp** | See documentation and repository structure. |
+| **Fully functional dApp** | [Live Demo](https://zk-verifier-zkloan-credit-scorer-ui-vert.vercel.app/) |
 | **Minimum 3 tests passing** | ![Tests Passing](public/images/img1.png) |
 | **CI/CD pipeline passing** | ![CI/CD Pipeline](public/images/img2.png) |
 | **Approved idea** | ZKLoan Credit Scorer (approved via submission template). |
